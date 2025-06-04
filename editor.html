@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Editor de Ranking</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container my-5" id="auth-container">
+  <h2>Editor de Ranking</h2>
+  <form id="token-form">
+    <div class="mb-3">
+      <label class="form-label">Token de GitHub (con permiso gist)</label>
+      <input type="password" class="form-control" id="token" required>
+    </div>
+    <button class="btn btn-primary">Acceder</button>
+  </form>
+</div>
+
+<div class="container my-5 d-none" id="editor-container">
+  <h2>Listado de Equipos</h2>
+
+  <form id="form-equipo" class="row g-3">
+    <input type="hidden" id="editIndex">
+    <div class="col-md-4">
+      <input type="text" id="nombre" class="form-control" placeholder="Nombre del equipo" required>
+    </div>
+    <div class="col-md-3">
+      <input type="number" id="tiempo" class="form-control" placeholder="Tiempo (segundos)" required>
+    </div>
+    <div class="col-md-3">
+      <input type="date" id="fecha" class="form-control" required>
+    </div>
+    <div class="col-md-2">
+      <button type="submit" class="btn btn-success w-100">Guardar</button>
+    </div>
+  </form>
+
+  <hr>
+
+  <ul class="list-group mt-4" id="lista-equipos"></ul>
+</div>
+
+<script>
+  const GIST_ID = "153d85038e8b0f8e3d55295b8195e36e";
+  const FILENAME = "ranking.json";
+
+  let token = "";
+  let equipos = [];
+
+  document.getElementById("token-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    token = document.getElementById("token").value;
+    try {
+      await cargarEquipos();
+      document.getElementById("auth-container").classList.add("d-none");
+      document.getElementById("editor-container").classList.remove("d-none");
+    } catch (err) {
+      alert("Token inválido o error al acceder al Gist.");
+      console.error(err);
+    }
+  });
+
+  async function cargarEquipos() {
+    const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      headers: { Authorization: `token ${token}` }
+    });
+    const data = await response.json();
+    equipos = JSON.parse(data.files[FILENAME].content);
+    renderLista();
+  }
+
+  function guardarEquipos() {
+    return fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `token ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        files: {
+          [FILENAME]: {
+            content: JSON.stringify(equipos, null, 2)
+          }
+        }
+      })
+    });
+  }
+
+  function renderLista() {
+    const ul = document.getElementById("lista-equipos");
+    ul.innerHTML = "";
+
+    if (equipos.length === 0) {
+      ul.innerHTML = '<li class="list-group-item">Sin equipos</li>';
+      return;
+    }
+
+    equipos.forEach((e, i) => {
+      const li = document.createElement("li");
+      li.className = "list-group-item d-flex justify-content-between align-items-center";
+      li.innerHTML = `
+        <div>
+          <strong>${e.nombre}</strong> - ${e.tiempoSegundos}s - ${e.fecha}
+        </div>
+        <div>
+          <button class="btn btn-sm btn-warning me-2" onclick="editar(${i})">Editar</button>
+          <button class="btn btn-sm btn-danger" onclick="borrar(${i})">Borrar</button>
+        </div>
+      `;
+      ul.appendChild(li);
+    });
+  }
+
+  function editar(i) {
+    const e = equipos[i];
+    document.getElementById("nombre").value = e.nombre;
+    document.getElementById("tiempo").value = e.tiempoSegundos;
+    document.getElementById("fecha").value = e.fecha;
+    document.getElementById("editIndex").value = i;
+  }
+
+  function borrar(i) {
+    if (confirm("¿Borrar este equipo?")) {
+      equipos.splice(i, 1);
+      guardarEquipos().then(renderLista);
+    }
+  }
+
+  document.getElementById("form-equipo").addEventListener("submit", e => {
+    e.preventDefault();
+    const nombre = document.getElementById("nombre").value.trim();
+    const tiempo = parseInt(document.getElementById("tiempo").value);
+    const fecha = document.getElementById("fecha").value;
+    const editIndex = document.getElementById("editIndex").value;
+
+    const nuevo = { nombre, tiempoSegundos: tiempo, fecha };
+
+    if (editIndex !== "") {
+      equipos[editIndex] = nuevo;
+    } else {
+      equipos.push(nuevo);
+    }
+
+    e.target.reset();
+    document.getElementById("editIndex").value = "";
+
+    guardarEquipos().then(renderLista);
+  });
+</script>
+</body>
+</html>
