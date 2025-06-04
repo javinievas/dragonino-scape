@@ -1,81 +1,144 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Ranking Dragonino Scape</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ranking - Dragonino Scape</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <style>
+    body {
+      background: linear-gradient(to bottom, #fceabb, #f8b500);
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      padding: 2rem;
+    }
+
+    h1, h2 {
+      text-align: center;
+      color: #8B0000;
+      text-shadow: 2px 2px #ffd700;
+    }
+
+    .logo {
+      display: block;
+      margin: 0 auto 1rem;
+      max-width: 220px;
+      animation: vuelo 3s ease-in-out infinite;
+    }
+
+    @keyframes vuelo {
+      0%   { transform: translateY(0) rotate(0deg); }
+      50%  { transform: translateY(-15px) rotate(2deg); }
+      100% { transform: translateY(0) rotate(0deg); }
+    }
+
+    .ranking {
+      margin-bottom: 3rem;
+    }
+
+    .list-group-item {
+      background-color: #fff8dc;
+      border-color: #deb887;
+      font-size: 1.2rem;
+    }
+
+    .list-group-item strong {
+      color: #8b0000;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #6b4d1f;
+    }
+  </style>
 </head>
-<body class="bg-light">
-  <div class="container my-5">
-    <h1 class="text-center mb-4">Ranking Escape Room</h1>
+<body>
 
-    <div id="rankings">
-      <div class="mb-5">
-        <h2>Ranking de Hoy</h2>
-        <ul class="list-group" id="ranking-hoy"></ul>
-      </div>
+  <img src="ranking.jpeg" alt="Logo Dragonino" class="logo" />
 
-      <div class="mb-5">
-        <h2>Ranking del Último Mes</h2>
-        <ul class="list-group" id="ranking-mes"></ul>
-      </div>
+  <h1>Ranking de Aventureros</h1>
+  <h2>🐉 Dragonino Scape</h2>
 
-      <div>
-        <h2>Ranking Global</h2>
-        <ul class="list-group" id="ranking-global"></ul>
-      </div>
-    </div>
+  <div class="text-center text-muted mb-4">
+    <small>Última actualización: <span id="ultima-actualizacion">--:--:--</span></small>
+  </div>
+
+  <div class="ranking">
+    <h2>🏅 ¡Los Más Rápidos de Hoy!</h2>
+    <ul id="ranking-dia" class="list-group shadow-lg"></ul>
+  </div>
+
+  <div class="ranking">
+    <h2>📆 Aventureros del Mes</h2>
+    <ul id="ranking-mes" class="list-group shadow-lg"></ul>
+  </div>
+
+  <div class="ranking">
+    <h2>🌍 ¡Ranking Legendario!</h2>
+    <ul id="ranking-global" class="list-group shadow-lg"></ul>
+  </div>
+
+  <div class="footer mt-5">
+    <p>🏰 ¡Gracias por jugar en Dragonino Scape! 🐲</p>
   </div>
 
   <script>
-    const GIST_ID = "153d85038e8b0f8e3d55295b8195e36e";
-    const FILENAME = "ranking.json";
+    const GIST_RAW_URL = 'https://gist.githubusercontent.com/153d85038e8b0f8e3d55295b8195e36e/raw';
 
-    function formatearTiempo(segundos) {
-      const minutos = Math.floor(segundos / 60);
-      const restoSegundos = segundos % 60;
-      return `${minutos}m ${restoSegundos}s`;
+    function segundosATiempo(segundos) {
+      const h = Math.floor(segundos / 3600);
+      const m = Math.floor((segundos % 3600) / 60);
+      const s = segundos % 60;
+      return `${h}h ${m}m ${s}s`;
     }
 
-    function renderRanking(equipos, filtro, idDestino) {
-      const listaFiltrada = equipos
-        .filter(filtro)
-        .sort((a, b) => a.tiempoSegundos - b.tiempoSegundos);
-
-      const ul = document.getElementById(idDestino);
-      ul.innerHTML = "";
-
-      if (listaFiltrada.length === 0) {
-        ul.innerHTML = '<li class="list-group-item">Sin datos</li>';
-        return;
-      }
-
-      listaFiltrada.forEach((equipo, index) => {
-        const li = document.createElement('li');
-        li.className = "list-group-item d-flex justify-content-between align-items-center";
-        li.innerHTML = `<span>#${index + 1} - ${equipo.nombre}</span><span>${formatearTiempo(equipo.tiempoSegundos)}</span>`;
-        ul.appendChild(li);
-      });
+    function actualizarHora() {
+      const ahora = new Date();
+      document.getElementById('ultima-actualizacion').textContent =
+        ahora.toLocaleTimeString('es-ES');
     }
 
-    async function cargarDatos() {
-      const url = `https://gist.githubusercontent.com/raw/${GIST_ID}/${FILENAME}`;
+    async function cargarRanking() {
       try {
-        const response = await fetch(url);
-        const equipos = await response.json();
-        const hoy = dayjs().format('YYYY-MM-DD');
-        const haceUnMes = dayjs().subtract(1, 'month');
+        const resp = await fetch(GIST_RAW_URL);
+        if (!resp.ok) throw new Error('No se pudo obtener el JSON');
+        const datos = await resp.json();
 
-        renderRanking(equipos, e => e.fecha === hoy, 'ranking-hoy');
-        renderRanking(equipos, e => dayjs(e.fecha).isAfter(haceUnMes), 'ranking-mes');
-        renderRanking(equipos, () => true, 'ranking-global');
+        // Limpiar listas anteriores
+        ['ranking-dia', 'ranking-mes', 'ranking-global'].forEach(id =>
+          document.getElementById(id).innerHTML = ''
+        );
+
+        const hoy = new Date().toISOString().slice(0, 10);
+        const unMesAtras = new Date();
+        unMesAtras.setMonth(unMesAtras.getMonth() - 1);
+
+        const ordenados = [...datos].sort((a, b) => a.tiempoSegundos - b.tiempoSegundos);
+        const dia = ordenados.filter(e => e.fecha === hoy);
+        const mes = ordenados.filter(e => new Date(e.fecha) >= unMesAtras);
+
+        const mostrar = (lista, idElemento) => {
+          const contenedor = document.getElementById(idElemento);
+          lista.forEach((e, i) => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between';
+            li.innerHTML = `<strong>${i + 1}. ${e.nombre}</strong><span>${segundosATiempo(e.tiempoSegundos)}</span>`;
+            contenedor.appendChild(li);
+          });
+        };
+
+        mostrar(dia, 'ranking-dia');
+        mostrar(mes, 'ranking-mes');
+        mostrar(ordenados, 'ranking-global');
+
+        actualizarHora();
       } catch (err) {
-        alert("Error cargando datos del ranking.");
-        console.error(err);
+        console.error('Error al cargar el ranking:', err);
       }
     }
-    cargarDatos();
+
+    cargarRanking(); // Al inicio
+    setInterval(cargarRanking, 60 * 1000); // Cada minuto
   </script>
 </body>
 </html>
