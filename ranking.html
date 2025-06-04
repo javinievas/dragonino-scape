@@ -7,7 +7,6 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <style>
     body {
-      background: linear-gradient(to bottom, #fceabb, #f8b500);
       font-family: 'Comic Sans MS', cursive, sans-serif;
       padding: 2rem;
     }
@@ -32,11 +31,23 @@
     }
 
     .ranking {
-      margin-bottom: 3rem;
+      margin-bottom: 2rem;
+      background-color: #fff8dc;
+      border: 2px solid #deb887;
+      padding: 1rem;
+      border-radius: 1rem;
+      box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    .ranking.resaltado-hoy {
+      background-color: #fff2c6;
+      border-color: #ff9900;
+      box-shadow: 0 0 25px rgba(255, 165, 0, 0.5);
+      transform: scale(1.03);
     }
 
     .list-group-item {
-      background-color: #fff8dc;
+      background-color: #fff;
       border-color: #deb887;
       font-size: 1.2rem;
     }
@@ -63,19 +74,27 @@
     <small>Última actualización: <span id="ultima-actualizacion">--:--:--</span></small>
   </div>
 
-  <div class="ranking">
-    <h2>🏅 ¡Los Más Rápidos de Hoy!</h2>
-    <ul id="ranking-dia" class="list-group shadow-lg"></ul>
-  </div>
-
-  <div class="ranking">
-    <h2>📆 Aventureros del Mes</h2>
-    <ul id="ranking-mes" class="list-group shadow-lg"></ul>
-  </div>
-
-  <div class="ranking">
-    <h2>🌍 ¡Ranking Legendario!</h2>
-    <ul id="ranking-global" class="list-group shadow-lg"></ul>
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="ranking resaltado-hoy">
+          <h2 class="text-center">🏅 ¡Los Mejores Hoy!</h2>
+          <ul id="ranking-dia" class="list-group"></ul>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="ranking">
+          <h2 class="text-center">📆 Aventureros del Mes</h2>
+          <ul id="ranking-mes" class="list-group"></ul>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="ranking">
+          <h2 class="text-center">🌍 ¡Ranking Legendario!</h2>
+          <ul id="ranking-global" class="list-group"></ul>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="footer mt-5">
@@ -83,7 +102,9 @@
   </div>
 
   <script>
-    const GIST_RAW_URL = 'https://gist.githubusercontent.com/153d85038e8b0f8e3d55295b8195e36e/raw';
+    const GIST_ID = "153d85038e8b0f8e3d55295b8195e36e";
+    const FILENAME = "ranking.json";
+    const GIST_RAW_URL = `https://gist.githubusercontent.com/raw/${GIST_ID}/${FILENAME}`;
 
     function segundosATiempo(segundos) {
       const h = Math.floor(segundos / 3600);
